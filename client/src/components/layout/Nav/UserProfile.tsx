@@ -1,8 +1,9 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, HelpCircle, User, LogOut, Building2, ChevronDown, Shield, CreditCard } from 'lucide-react';
+import { Bell, Settings, HelpCircle, User, LogOut, Building2, ChevronDown, Shield, CreditCard, LayoutDashboard } from 'lucide-react';
 import { Popover, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Mock notifications for testing
 const mockNotifications = [
@@ -33,6 +34,7 @@ export default function UserProfile() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState(mockNotifications);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   
   const userName = "Andrei Draghici";
   const userRole = "Administrator";
@@ -55,6 +57,11 @@ export default function UserProfile() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleAdminPanel = () => {
+    router.push('/admin');
+    setIsProfileOpen(false);
+  };
 
   return (
     <div className="flex items-center gap-4">
@@ -181,6 +188,13 @@ export default function UserProfile() {
 
             {/* Menu Items */}
             <div className="px-2 py-2 border-t border-gray-100">
+              <button 
+                onClick={handleAdminPanel}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <LayoutDashboard className="w-4 h-4 text-[#0066B3]" />
+                <span className="font-medium">Admin Panel</span>
+              </button>
               <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                 <User className="w-4 h-4 text-gray-400" />
                 <span>Profile Settings</span>

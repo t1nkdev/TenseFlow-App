@@ -1,13 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import SearchBar from './SearchBar';
 import UserProfile from './UserProfile';
 import NavigationMenu from './NavigationMenu';
+import LoaderAnimation from './LoaderAnimation';
 
 export default function TopBar() {
   const [homeMenuOpen, setHomeMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const pathname = usePathname();
 
   const menuItems = [
     { name: 'My Home', href: '#' },
@@ -16,10 +20,19 @@ export default function TopBar() {
     { name: 'Employee Management', href: '#' }
   ];
 
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [pathname]);
+
   return (
     <div className="fixed top-0 w-full z-40">
       {/* Top Navbar - Grey */}
-      <div className="w-full h-16 bg-white">
+      <div className="w-full h-16 bg-white relative">
         <div className="h-full mx-auto px-8 lg:px-20 flex items-center">
           {/* Left Section - Logo and Menu */}
           <div className="flex items-center">
@@ -71,6 +84,7 @@ export default function TopBar() {
             <UserProfile />
           </div>
         </div>
+        {isLoading && <LoaderAnimation />}
       </div>
 
       {/* Bottom Navbar - White with Submenus */}

@@ -37,6 +37,16 @@ const nextConfig: NextConfig = {
           ],
         },
         {
+          source: '/admin',
+          destination: '/admin',
+          has: [
+            {
+              type: 'host',
+              value: 'app.localhost:3000',
+            },
+          ],
+        },
+        {
           source: '/',
           destination: '/auth/sign-in',
           has: [

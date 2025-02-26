@@ -10,7 +10,7 @@ const SUBDOMAIN_CONFIG = {
   },
   'app': {
     defaultRoute: '/main/dashboard',
-    allowedPaths: ['/main'],
+    allowedPaths: ['/main', '/admin'],
   }
 } as const
 
