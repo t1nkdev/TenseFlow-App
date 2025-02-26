@@ -159,7 +159,16 @@ export default function SidebarShiftTable() {
 
         {/* Shift Legend */}
         <div>
-          <h4 className="text-xs text-gray-500 mb-2">Shift Legend</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-medium text-gray-500">Shift Legend</h4>
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="text-xs text-[#0066B3] hover:text-[#0066B3]/80 font-medium flex items-center gap-1"
+            >
+              <Settings className="w-3 h-3" />
+              <span>Configure</span>
+            </button>
+          </div>
           {shiftTypes.length === 0 ? (
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
               <div className="flex flex-col items-center text-center gap-2">
@@ -177,28 +186,23 @@ export default function SidebarShiftTable() {
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               {shiftTypes.map((shift) => (
                 <div 
                   key={shift.id}
-                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100 hover:shadow-sm transition-shadow"
+                  className="flex items-center gap-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-8 h-8 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: `${shift.color}15` }}
-                    >
-                      <span className="text-sm font-semibold" style={{ color: shift.color }}>
-                        {shift.code}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-900">{shift.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {shift.startTime} - {shift.endTime}
-                      </p>
-                    </div>
+                  <div 
+                    className="w-7 h-7 rounded flex items-center justify-center"
+                    style={{ backgroundColor: `${shift.color}15` }}
+                  >
+                    <span className="text-sm font-medium" style={{ color: shift.color }}>
+                      {shift.code}
+                    </span>
                   </div>
+                  <span className="text-sm text-gray-600">
+                    - {shift.name}
+                  </span>
                 </div>
               ))}
             </div>

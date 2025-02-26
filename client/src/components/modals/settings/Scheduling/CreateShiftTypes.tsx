@@ -13,14 +13,6 @@ interface ShiftType {
   requiresTime: boolean;
 }
 
-const defaultShiftTypes: ShiftType[] = [
-  { id: '1', code: 'MOR', name: 'Morning', startTime: '06:00', endTime: '14:00', color: '#3B82F6', requiresTime: true },
-  { id: '2', code: 'AFT', name: 'Afternoon', startTime: '14:00', endTime: '22:00', color: '#10B981', requiresTime: true },
-  { id: '3', code: 'NIT', name: 'Night', startTime: '22:00', endTime: '06:00', color: '#8B5CF6', requiresTime: true },
-  { id: '4', code: 'KRK', name: 'Krank', color: '#EF4444', requiresTime: false },
-  { id: '5', code: 'URL', name: 'Urlaub', color: '#F59E0B', requiresTime: false },
-];
-
 const colorOptions = [
   '#3B82F6', // blue
   '#10B981', // green
@@ -42,11 +34,9 @@ export default function CreateShiftTypes() {
     requiresTime: true
   });
 
-  // Initialize shift types if empty
+  // Remove initialization of default shift types
   React.useEffect(() => {
-    if (shiftTypes.length === 0) {
-      setShiftTypes(defaultShiftTypes);
-    }
+    // No longer initializing default shift types
   }, []);
 
   const handleAddShift = () => {
