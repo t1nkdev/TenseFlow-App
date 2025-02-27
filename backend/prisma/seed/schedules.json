@@ -1,0 +1,49 @@
+{
+  "schedules": [
+    {
+      "id": "sched001",
+      "employeeId": "emp001",
+      "shiftId": "shift001",
+      "date": "2024-03-18",
+      "status": "CONFIRMED",
+      "createdAt": "2024-03-01T10:00:00Z",
+      "updatedAt": "2024-03-01T10:00:00Z"
+    },
+    {
+      "id": "sched002",
+      "employeeId": "emp002",
+      "shiftId": "shift002",
+      "date": "2024-03-18",
+      "status": "CONFIRMED",
+      "createdAt": "2024-03-01T10:00:00Z",
+      "updatedAt": "2024-03-01T10:00:00Z"
+    },
+    {
+      "id": "sched003",
+      "employeeId": "emp003",
+      "shiftId": "shift003",
+      "date": "2024-03-18",
+      "status": "CONFIRMED",
+      "createdAt": "2024-03-01T10:00:00Z",
+      "updatedAt": "2024-03-01T10:00:00Z"
+    },
+    {
+      "id": "sched004",
+      "employeeId": "emp004",
+      "shiftId": "shift004",
+      "date": "2024-03-18",
+      "status": "CONFIRMED",
+      "createdAt": "2024-03-01T10:00:00Z",
+      "updatedAt": "2024-03-01T10:00:00Z"
+    },
+    {
+      "id": "sched005",
+      "employeeId": "emp005",
+      "shiftId": "shift005",
+      "date": "2024-03-18",
+      "status": "PENDING",
+      "createdAt": "2024-03-01T10:00:00Z",
+      "updatedAt": "2024-03-01T10:00:00Z"
+    }
+  ]
+} 

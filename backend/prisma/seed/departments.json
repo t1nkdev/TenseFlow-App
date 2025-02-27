@@ -1,0 +1,44 @@
+{
+  "departments": [
+    {
+      "id": "dept001",
+      "name": "Engineering",
+      "description": "Software development and technical operations",
+      "managerId": "emp001",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "dept002",
+      "name": "Project Management",
+      "description": "Project planning and execution",
+      "managerId": "emp002",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "dept003",
+      "name": "Human Resources",
+      "description": "Employee management and recruitment",
+      "managerId": "emp004",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "dept004",
+      "name": "Marketing",
+      "description": "Brand management and marketing strategies",
+      "managerId": "emp005",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "dept005",
+      "name": "Sales",
+      "description": "Sales operations and client relationships",
+      "managerId": "emp003",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "status": "ACTIVE"
+    }
+  ]
+} 

@@ -116,7 +116,7 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                   </div>
                 </div>
 
-                <div className="flex h-[750px]">
+                <div className="flex h-[700px]">
                   {/* Main Navigation */}
                   <div className="w-[280px] border-r border-gray-200">
                     <div className="pt-12 pb-4">

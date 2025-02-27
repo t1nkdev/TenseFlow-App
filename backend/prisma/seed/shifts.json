@@ -1,0 +1,45 @@
+{
+  "shifts": [
+    {
+      "id": "shift001",
+      "code": "MOR",
+      "name": "Morning Shift",
+      "startTime": "06:00",
+      "endTime": "14:00",
+      "color": "#3B82F6",
+      "requiresTime": true
+    },
+    {
+      "id": "shift002",
+      "code": "AFT",
+      "name": "Afternoon Shift",
+      "startTime": "14:00",
+      "endTime": "22:00",
+      "color": "#10B981",
+      "requiresTime": true
+    },
+    {
+      "id": "shift003",
+      "code": "NIT",
+      "name": "Night Shift",
+      "startTime": "22:00",
+      "endTime": "06:00",
+      "color": "#8B5CF6",
+      "requiresTime": true
+    },
+    {
+      "id": "shift004",
+      "code": "KRK",
+      "name": "Krank",
+      "color": "#EF4444",
+      "requiresTime": false
+    },
+    {
+      "id": "shift005",
+      "code": "URL",
+      "name": "Urlaub",
+      "color": "#F59E0B",
+      "requiresTime": false
+    }
+  ]
+} 

@@ -1,35 +1,71 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { X, Calendar, Users, Clock, AlertCircle, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import LogoPreloader from '../pr/LogoPreloader';
+import { createShiftPlan } from '@/api/shiftPlans';
+import { getDepartments } from '@/api/departments';
+import { Department } from '@/types/prismaTypes';
 
-interface CreateShiftPlanModalProps {
+export interface CreateShiftPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-export default function CreateShiftPlanModal({ isOpen, onClose }: CreateShiftPlanModalProps) {
+export default function CreateShiftPlanModal({ isOpen, onClose, onSuccess }: CreateShiftPlanModalProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [formData, setFormData] = useState({
-    planName: '',
-    department: '',
+    name: '',
+    departmentId: '',
     startDate: '',
     endDate: '',
-    shiftType: 'rotating' // or 'fixed'
+    shiftType: 'rotating' as 'rotating' | 'fixed',
+    status: 'DRAFT'
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Mock state - in real app this would come from your data store
-  const hasDepartments = false;
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchDepartments = async () => {
+    try {
+      const data = await getDepartments();
+      setDepartments(data);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData);
-    onClose();
+    setError('');
+    setLoading(true);
+
+    try {
+      await createShiftPlan(formData);
+      onSuccess();
+      onClose();
+      setFormData({
+        name: '',
+        departmentId: '',
+        startDate: '',
+        endDate: '',
+        shiftType: 'rotating',
+        status: 'DRAFT'
+      });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create shift plan');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleConfigureDepartments = () => {
@@ -118,14 +154,14 @@ export default function CreateShiftPlanModal({ isOpen, onClose }: CreateShiftPla
                             </label>
                             <input
                               type="text"
-                              value={formData.planName}
-                              onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066B3]/20"
                               placeholder="e.g., Q1 2024 Shift Plan"
                             />
                           </div>
                           
-                          {!hasDepartments ? (
+                          {!departments.length ? (
                             <div className="p-6 bg-blue-50 rounded-xl border border-[#0066B3]/10">
                               <div className="flex items-center gap-4">
                                 <div className="p-3 bg-white rounded-lg shadow-sm">
@@ -151,14 +187,16 @@ export default function CreateShiftPlanModal({ isOpen, onClose }: CreateShiftPla
                                 Department
                               </label>
                               <select
-                                value={formData.department}
-                                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                value={formData.departmentId}
+                                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066B3]/20"
                               >
                                 <option value="">Select Department</option>
-                                <option value="engineering">Engineering</option>
-                                <option value="support">Support</option>
-                                <option value="operations">Operations</option>
+                                {departments.map((dept) => (
+                                  <option key={dept.id} value={dept.id}>
+                                    {dept.name}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           )}
@@ -257,9 +295,9 @@ export default function CreateShiftPlanModal({ isOpen, onClose }: CreateShiftPla
                               setStep(step + 1);
                             }
                           }}
-                          disabled={!hasDepartments && step === 1}
+                          disabled={!departments.length && step === 1}
                           className={`px-6 py-2.5 text-sm font-medium rounded-xl ${
-                            !hasDepartments && step === 1
+                            !departments.length && step === 1
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                               : 'bg-[#0066B3] text-white hover:bg-[#0066B3]/90'
                           } transition-colors`}

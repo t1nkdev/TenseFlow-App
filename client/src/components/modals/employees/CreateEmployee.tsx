@@ -1,15 +1,24 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { X, User, Building2, Mail, Phone, Calendar, Briefcase, UserCircle2, Hash } from 'lucide-react';
+import { createEmployee } from '@/api/employees';
+import { getDepartments } from '@/api/departments';
 
 interface CreateEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-export default function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeModalProps) {
+interface Department {
+  id: string;
+  name: string;
+}
+
+export default function CreateEmployeeModal({ isOpen, onClose, onSuccess }: CreateEmployeeModalProps) {
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,10 +30,40 @@ export default function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeM
     employeeId: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isOpen) {
+      loadDepartments();
+    }
+  }, [isOpen]);
+
+  const loadDepartments = async () => {
+    try {
+      const data = await getDepartments();
+      setDepartments(data);
+    } catch (error) {
+      console.error('Error loading departments:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData);
-    onClose();
+    try {
+      await createEmployee({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        employeeId: formData.employeeId,
+        role: formData.role,
+        departmentId: formData.department,
+        startDate: formData.startDate,
+        status: 'ACTIVE'
+      });
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error creating employee:', error);
+    }
   };
 
   return (
@@ -175,10 +214,11 @@ export default function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeM
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066B3]/20"
                           >
                             <option value="">Select Department</option>
-                            <option value="engineering">Engineering</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="sales">Sales</option>
-                            <option value="hr">HR</option>
+                            {departments.map((dept) => (
+                              <option key={dept.id} value={dept.id}>
+                                {dept.name}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -230,3 +270,4 @@ export default function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeM
     </Transition>
   );
 }
+

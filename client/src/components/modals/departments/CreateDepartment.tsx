@@ -1,28 +1,63 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { X, Building2, Users, MapPin, ClipboardList, UserCircle2, LayoutGrid } from 'lucide-react';
+import { createDepartment, getEmployees } from '@/api/departments';
 
 interface CreateDepartmentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-export default function CreateDepartmentModal({ isOpen, onClose }: CreateDepartmentModalProps) {
+interface Employee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  employeeId: string;
+}
+
+export default function CreateDepartmentModal({ isOpen, onClose, onSuccess }: CreateDepartmentModalProps) {
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     location: '',
     manager: '',
-    status: 'active',
+    status: 'ACTIVE',
     capacity: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isOpen) {
+      loadEmployees();
+    }
+  }, [isOpen]);
+
+  const loadEmployees = async () => {
+    try {
+      const data = await getEmployees();
+      setEmployees(data);
+    } catch (error) {
+      console.error('Error loading employees:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData);
-    onClose();
+    try {
+      await createDepartment({
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        manager: formData.manager || null
+      });
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error creating department:', error);
+    }
   };
 
   return (
@@ -52,7 +87,7 @@ export default function CreateDepartmentModal({ isOpen, onClose }: CreateDepartm
               leaveTo="opacity-0 translate-y-[50%] scale-95"
             >
               <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
-                {/* Header with gradient - reduced height from h-32 to h-24 */}
+                {/* Header with gradient */}
                 <div className="relative h-24 bg-gradient-to-r from-[#0066B3] to-[#0077CC] p-6">
                   <button
                     onClick={onClose}
@@ -100,8 +135,11 @@ export default function CreateDepartmentModal({ isOpen, onClose }: CreateDepartm
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0066B3]/20"
                           >
                             <option value="">Select Manager</option>
-                            <option value="john_doe">John Doe</option>
-                            <option value="jane_smith">Jane Smith</option>
+                            {employees.map((employee) => (
+                              <option key={employee.id} value={employee.id}>
+                                {employee.firstName} {employee.lastName} ({employee.employeeId})
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -158,35 +196,35 @@ export default function CreateDepartmentModal({ isOpen, onClose }: CreateDepartm
                           <div className="grid grid-cols-2 gap-3">
                             <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-xl cursor-pointer transition-colors hover:bg-gray-50"
                               style={{ 
-                                borderColor: formData.status === 'active' ? '#0066B3' : '#e5e7eb',
-                                backgroundColor: formData.status === 'active' ? '#f0f7ff' : 'white'
+                                borderColor: formData.status === 'ACTIVE' ? '#0066B3' : '#e5e7eb',
+                                backgroundColor: formData.status === 'ACTIVE' ? '#f0f7ff' : 'white'
                               }}>
                               <input
                                 type="radio"
                                 name="status"
-                                value="active"
-                                checked={formData.status === 'active'}
+                                value="ACTIVE"
+                                checked={formData.status === 'ACTIVE'}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                 className="hidden"
                               />
-                              <span className="text-sm font-medium" style={{ color: formData.status === 'active' ? '#0066B3' : '#374151' }}>
+                              <span className="text-sm font-medium" style={{ color: formData.status === 'ACTIVE' ? '#0066B3' : '#374151' }}>
                                 Active
                               </span>
                             </label>
                             <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-xl cursor-pointer transition-colors hover:bg-gray-50"
                               style={{ 
-                                borderColor: formData.status === 'inactive' ? '#0066B3' : '#e5e7eb',
-                                backgroundColor: formData.status === 'inactive' ? '#f0f7ff' : 'white'
+                                borderColor: formData.status === 'INACTIVE' ? '#0066B3' : '#e5e7eb',
+                                backgroundColor: formData.status === 'INACTIVE' ? '#f0f7ff' : 'white'
                               }}>
                               <input
                                 type="radio"
                                 name="status"
-                                value="inactive"
-                                checked={formData.status === 'inactive'}
+                                value="INACTIVE"
+                                checked={formData.status === 'INACTIVE'}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                 className="hidden"
                               />
-                              <span className="text-sm font-medium" style={{ color: formData.status === 'inactive' ? '#0066B3' : '#374151' }}>
+                              <span className="text-sm font-medium" style={{ color: formData.status === 'INACTIVE' ? '#0066B3' : '#374151' }}>
                                 Inactive
                               </span>
                             </label>
@@ -196,7 +234,7 @@ export default function CreateDepartmentModal({ isOpen, onClose }: CreateDepartm
                     </div>
 
                     {/* Footer */}
-                    <div className="flex justify-end pt-6 border-t">
+                    <div className="flex justify-end pt-6 mt-8 border-t border-gray-100">
                       <div className="flex gap-3">
                         <button
                           type="button"

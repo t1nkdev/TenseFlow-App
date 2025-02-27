@@ -2,6 +2,7 @@
 import TopBar from "@/components/layout/Nav/Topbar";
 import GlobalNotification from "@/components/layout/global/GlobalNotification";
 import { ShiftTypesProvider } from '@/context/ShiftTypesContext';
+import { Toaster } from 'sonner';
 import { useState } from 'react';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
         </div>
+        <Toaster richColors position="top-right" />
       </div>
     </ShiftTypesProvider>
   );  

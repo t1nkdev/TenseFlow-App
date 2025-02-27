@@ -1,14 +1,19 @@
 'use client';
-import ShiftTable from '@/components/schedule/ShiftTable';
+import { useState } from 'react';
 import SidebarShiftTable from '@/components/schedule/SidebarShiftTable';
+import ShiftTable from '@/components/schedule/ShiftTable';
+import { ShiftPlan } from '@/types/prismaTypes';
 
-export default function DashboardDemo() {
+export default function ShiftSchedulePage() {
+  const [selectedPlan, setSelectedPlan] = useState<ShiftPlan>();
+
   return (
-    <div className="w-full h-full">
-      <div className="flex bg-white h-full">
-        <SidebarShiftTable />
-        <ShiftTable />
-      </div>
+    <div className="flex-1 flex">
+      <SidebarShiftTable
+        onShiftPlanSelect={setSelectedPlan}
+        selectedPlanId={selectedPlan?.id}
+      />
+      <ShiftTable selectedPlan={selectedPlan} />
     </div>
   );
 }

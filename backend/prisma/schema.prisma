@@ -1,0 +1,185 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  status      Status     @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  manager     Employee?  @relation("DepartmentManager", fields: [managerId], references: [id])
+  managerId   String?    @unique
+  employees   Employee[] @relation("DepartmentEmployees")
+  shiftPlans  ShiftPlan[]
+
+  @@map("departments")
+}
+
+model Employee {
+  id            String       @id @default(uuid())
+  employeeId    String      @unique // External ID like "EMP001"
+  firstName     String
+  lastName      String
+  email         String      @unique
+  phone         String?
+  role          String
+  status        Status      @default(ACTIVE)
+  startDate     DateTime
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  department    Department  @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+  departmentId  String
+  managedDepartment Department? @relation("DepartmentManager")
+  schedules     Schedule[]
+  preferences   ShiftPreference[]
+  unavailability TimeOff[]
+  skills        Skill[]
+
+  @@map("employees")
+}
+
+model ShiftPlan {
+  id          String    @id @default(uuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  status      PlanStatus @default(DRAFT)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  department  Department @relation(fields: [departmentId], references: [id])
+  departmentId String
+  schedules   Schedule[]
+  shiftTypes  ShiftType[]
+
+  @@map("shift_plans")
+}
+
+model ShiftType {
+  id           String    @id @default(uuid())
+  code         String    @unique // Like "MOR", "AFT", "NIT"
+  name         String
+  color        String
+  startTime    String?   // Optional for special shifts like "Krank"
+  endTime      String?
+  requiresTime Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  shiftPlan    ShiftPlan @relation(fields: [shiftPlanId], references: [id])
+  shiftPlanId  String
+  schedules    Schedule[]
+
+  @@map("shift_types")
+}
+
+model Schedule {
+  id          String    @id @default(uuid())
+  date        DateTime
+  status      ScheduleStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employeeId  String
+  shiftType   ShiftType @relation(fields: [shiftTypeId], references: [id])
+  shiftTypeId String
+  shiftPlan   ShiftPlan @relation(fields: [shiftPlanId], references: [id])
+  shiftPlanId String
+
+  @@map("schedules")
+}
+
+model ShiftPreference {
+  id          String    @id @default(uuid())
+  preference  PreferenceType
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employeeId  String
+
+  @@map("shift_preferences")
+}
+
+model TimeOff {
+  id          String    @id @default(uuid())
+  startDate   DateTime
+  endDate     DateTime
+  reason      String?
+  status      TimeOffStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employeeId  String
+
+  @@map("time_off")
+}
+
+model Skill {
+  id          String    @id @default(uuid())
+  name        String
+  level       SkillLevel
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  employees   Employee[]
+
+  @@map("skills")
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PlanStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ScheduleStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  COMPLETED
+}
+
+enum PreferenceType {
+  PREFERRED
+  NEUTRAL
+  AVOID
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}

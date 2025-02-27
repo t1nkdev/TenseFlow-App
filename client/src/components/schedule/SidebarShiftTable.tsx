@@ -1,40 +1,70 @@
 'use client';
-import React, { useState } from 'react';
-import { Plus, Calendar, Folder, FileText, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Calendar, Folder, FileText, Settings, Clock, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import styles from '@/app/main/shift-schedule/page.module.css';
 import CreateShiftPlanModal from '../modals/CreateShiftPlan';
 import QuickActionModal from '../modals/QuickActionModal';
 import ModalSettings from '../modals/settings/ModalSettings';
+import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 import { useShiftTypes } from '@/context/ShiftTypesContext';
+import { getShiftPlans, deleteShiftPlan } from '@/api/shiftPlans';
+import { ShiftPlan } from '@/types/prismaTypes';
 
-type ShiftType = 'M' | 'A' | 'N' | '-';
-
-function ShiftCell({ shift, isMonthView }: { shift: ShiftType; isMonthView: boolean }) {
-  const getShiftStyle = () => {
-    switch (shift) {
-      case 'M':
-        return 'bg-blue-50 text-blue-600';
-      case 'A':
-        return 'bg-green-50 text-green-600';
-      case 'N':
-        return 'bg-purple-50 text-purple-600';
-      default:
-        return 'bg-gray-50 text-gray-400';
-    }
-  };
-
-  return (
-    <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${getShiftStyle()}`}>
-      {shift}
-    </div>
-  );
+interface SidebarShiftTableProps {
+  onShiftPlanSelect: (plan: ShiftPlan) => void;
+  selectedPlanId?: string;
 }
 
-export default function SidebarShiftTable() {
+export default function SidebarShiftTable({ onShiftPlanSelect, selectedPlanId }: SidebarShiftTableProps) {
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isQuickActionModalOpen, setIsQuickActionModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<ShiftPlan | null>(null);
   const { shiftTypes } = useShiftTypes();
+  const [shiftPlans, setShiftPlans] = useState<ShiftPlan[]>([]);
+
+  useEffect(() => {
+    fetchShiftPlans();
+  }, []);
+
+  const fetchShiftPlans = async () => {
+    try {
+      const data = await getShiftPlans();
+      setShiftPlans(data);
+      // Select the first plan by default if none is selected
+      if (data.length > 0 && !selectedPlanId) {
+        onShiftPlanSelect(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching shift plans:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!planToDelete) return;
+
+    try {
+      await deleteShiftPlan(planToDelete.id);
+      await fetchShiftPlans();
+      toast.success('Shift plan deleted successfully');
+      if (selectedPlanId === planToDelete.id) {
+        // If the deleted plan was selected, select the first available plan
+        if (shiftPlans.length > 0) {
+          const nextPlan = shiftPlans.find(plan => plan.id !== planToDelete.id);
+          if (nextPlan) {
+            onShiftPlanSelect(nextPlan);
+          }
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete shift plan');
+    } finally {
+      setDeleteModalOpen(false);
+      setPlanToDelete(null);
+    }
+  };
 
   return (
     <aside className="w-72 border-r border-gray-200 flex flex-col bg-white shrink-0">
@@ -62,6 +92,92 @@ export default function SidebarShiftTable() {
           overflowY: 'auto'
         }}
       >
+        {/* Shift Plans List */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-900">Your Shift Plans</h3>
+            <button 
+              onClick={() => setIsShiftModalOpen(true)}
+              className="p-1 hover:bg-gray-50 rounded-lg"
+            >
+              <Plus className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+
+          {shiftPlans.length === 0 ? (
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center">
+              <Clock className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">No shift plans yet</p>
+              <button
+                onClick={() => setIsShiftModalOpen(true)}
+                className="mt-2 text-xs text-[#0066B3] hover:text-[#0066B3]/80 font-medium"
+              >
+                Create your first plan
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {shiftPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`w-full rounded-lg transition-all ${
+                    selectedPlanId === plan.id
+                      ? 'bg-[#0066B3]'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between p-3">
+                    <button
+                      onClick={() => onShiftPlanSelect(plan)}
+                      className="flex items-center gap-3 flex-1"
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        selectedPlanId === plan.id
+                          ? 'bg-white/10'
+                          : 'bg-blue-50'
+                      }`}>
+                        <Clock className={`w-4 h-4 ${
+                          selectedPlanId === plan.id
+                            ? 'text-white'
+                            : 'text-[#0066B3]'
+                        }`} />
+                      </div>
+                      <div>
+                        <h4 className={`font-medium ${
+                          selectedPlanId === plan.id
+                            ? 'text-white'
+                            : 'text-gray-900'
+                        }`}>{plan.name}</h4>
+                        <p className={`text-xs mt-0.5 ${
+                          selectedPlanId === plan.id
+                            ? 'text-white/80'
+                            : 'text-gray-500'
+                        }`}>
+                          {plan.department?.name} • {new Date(plan.startDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPlanToDelete(plan);
+                        setDeleteModalOpen(true);
+                      }}
+                      className={`p-1.5 rounded-lg ${
+                        selectedPlanId === plan.id
+                          ? 'text-white/80 hover:text-white hover:bg-white/10'
+                          : 'text-gray-400 hover:text-red-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Quick Actions Header */}
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-gray-900">Quick Actions</h3>
@@ -213,6 +329,7 @@ export default function SidebarShiftTable() {
       <CreateShiftPlanModal 
         isOpen={isShiftModalOpen}
         onClose={() => setIsShiftModalOpen(false)}
+        onSuccess={fetchShiftPlans}
       />
       <QuickActionModal 
         isOpen={isQuickActionModalOpen}
@@ -221,6 +338,17 @@ export default function SidebarShiftTable() {
       <ModalSettings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setPlanToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Delete Shift Plan"
+        message="Are you sure you want to delete this shift plan?"
+        itemName={planToDelete?.name}
       />
     </aside>
   );
