@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,13 +11,14 @@ model Department {
   id          String     @id @default(uuid())
   name        String
   description String?
+  groups      String[]   @default([])
   status      Status     @default(ACTIVE)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   manager     Employee?  @relation("DepartmentManager", fields: [managerId], references: [id])
   managerId   String?    @unique
   employees   Employee[] @relation("DepartmentEmployees")
-  shiftPlans  ShiftPlan[]
+  shiftPlanDepartments ShiftPlanDepartment[]
 
   @@map("departments")
 }
@@ -28,11 +28,12 @@ model Employee {
   employeeId    String      @unique // External ID like "EMP001"
   firstName     String
   lastName      String
-  email         String      @unique
+  email         String?      @unique
   phone         String?
   role          String
+  group         String?      // Group assignment (A, B, C, etc.)
   status        Status      @default(ACTIVE)
-  startDate     DateTime
+  startDate     DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   
@@ -58,17 +59,30 @@ model ShiftPlan {
   updatedAt   DateTime  @updatedAt
   
   // Relations
-  department  Department @relation(fields: [departmentId], references: [id])
-  departmentId String
+  departments ShiftPlanDepartment[]
   schedules   Schedule[]
   shiftTypes  ShiftType[]
 
   @@map("shift_plans")
 }
 
+model ShiftPlanDepartment {
+  id          String    @id @default(uuid())
+  shiftPlan   ShiftPlan @relation(fields: [shiftPlanId], references: [id], onDelete: Cascade)
+  shiftPlanId String
+  department  Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId String
+  displayOrder Int       @default(0)
+  createdAt   DateTime  @default(now())
+  schedules   Schedule[]
+
+  @@unique([shiftPlanId, departmentId])
+  @@map("shift_plan_departments")
+}
+
 model ShiftType {
   id           String    @id @default(uuid())
-  code         String    @unique // Like "MOR", "AFT", "NIT"
+  code         String    // Like "MOR", "AFT", "NIT"
   name         String
   color        String
   startTime    String?   // Optional for special shifts like "Krank"
@@ -82,6 +96,7 @@ model ShiftType {
   shiftPlanId  String
   schedules    Schedule[]
 
+  @@unique([code, shiftPlanId])
   @@map("shift_types")
 }
 
@@ -100,6 +115,8 @@ model Schedule {
   shiftTypeId String
   shiftPlan   ShiftPlan @relation(fields: [shiftPlanId], references: [id])
   shiftPlanId String
+  shiftPlanDepartment ShiftPlanDepartment? @relation(fields: [shiftPlanDepartmentId], references: [id])
+  shiftPlanDepartmentId String?
 
   @@map("schedules")
 }
@@ -154,7 +171,7 @@ enum Status {
 
 enum PlanStatus {
   DRAFT
-  PUBLISHED
+  ACTIVE
   ARCHIVED
 }
 

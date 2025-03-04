@@ -1,13 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { 
   X, Users, Building2, Calendar, Clock, ChevronRight, Plus, Settings2,
   Bell, Shield, Briefcase, Globe, Mail, Phone, UserCog, FileText, CalendarDays,
-  Repeat, Timer, BarChart, Zap
+  Repeat, Timer, BarChart, Zap, ChartBar
 } from 'lucide-react';
 import React from 'react';
+import { getEmployees } from '@/api/employees';
+import { getDepartments } from '@/api/departments';
 import CreateShiftTypes from './Scheduling/CreateShiftTypes';
 import ScheduleRules from './Scheduling/ScheduleRules';
 import TimeZones from './Scheduling/TimeZones';
@@ -20,10 +22,15 @@ import NotificationSettings from './Notifications/NotificationSettings';
 import EmailSettings from './Notifications/EmailSettings';
 import SMSSettings from './Notifications/SMSSettings';
 import AlertRules from './Notifications/AlertRules';
+import CreateEmployee from '../employees/CreateEmployee';
+import { useRouter } from 'next/navigation';
+
 
 interface ModalSettingsProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: any;
+  initialItem?: any;
 }
 
 const tabs = [
@@ -68,13 +75,78 @@ const tabs = [
   }
 ];
 
-export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedItem, setSelectedItem] = useState(0);
+export default function ModalSettings({ isOpen, onClose, initialTab = 0, initialItem = 0 }: ModalSettingsProps) {
+  const router = useRouter();
+  const initialTabIndex = typeof initialTab === 'string' ? 
+    tabs.findIndex(tab => tab.name.toLowerCase() === initialTab.toLowerCase()) : 
+    initialTab;
+  
+  const safeInitialTab = initialTabIndex >= 0 && initialTabIndex < tabs.length ? initialTabIndex : 0;
+  
+  const [selectedTab, setSelectedTab] = useState(safeInitialTab);
+  
+  const initialItemIndex = typeof initialItem === 'string' && tabs[safeInitialTab] ? 
+    tabs[safeInitialTab].items.findIndex(item => item.name.toLowerCase() === initialItem.toLowerCase()) : 
+    initialItem;
+  
+  const safeInitialItem = initialItemIndex >= 0 && tabs[safeInitialTab] && 
+    initialItemIndex < tabs[safeInitialTab].items.length ? initialItemIndex : 0;
+  
+  const [selectedItem, setSelectedItem] = useState(safeInitialItem);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreateEmployeeOpen, setIsCreateEmployeeOpen] = useState(false);
+  const [isEmployeeTableOpen, setIsEmployeeTableOpen] = useState(false);
 
-  // Mock states - in real app these would come from your data store
-  const hasDepartments = false;
-  const hasEmployees = false;
+  // Fetch data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
+
+  const fetchData = async () => {
+    try {
+      const [employeesData, departmentsData] = await Promise.all([
+        getEmployees(),
+        getDepartments()
+      ]);
+      setEmployees(employeesData);
+      setDepartments(departmentsData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset selections when modal opens with new initial values
+  useEffect(() => {
+    if (isOpen) {
+      const newTabIndex = typeof initialTab === 'string' ? 
+        tabs.findIndex(tab => tab.name.toLowerCase() === initialTab.toLowerCase()) : 
+        initialTab;
+      
+      const safeNewTab = newTabIndex >= 0 && newTabIndex < tabs.length ? newTabIndex : 0;
+      
+      setSelectedTab(safeNewTab);
+      
+      const newItemIndex = typeof initialItem === 'string' && tabs[safeNewTab] ? 
+        tabs[safeNewTab].items.findIndex(item => item.name.toLowerCase() === initialItem.toLowerCase()) : 
+        initialItem;
+      
+      const safeNewItem = newItemIndex >= 0 && tabs[safeNewTab] && 
+        newItemIndex < tabs[safeNewTab].items.length ? newItemIndex : 0;
+      
+      setSelectedItem(safeNewItem);
+    }
+  }, [isOpen, initialTab, initialItem]);
+
+  const handleShowAllEmployees = () => {
+    onClose(); // Close the settings modal
+    router.push('/main/employees'); // Navigate to employees page
+  };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -102,27 +174,22 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-7xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
-                {/* Header with gradient */}
-                <div className="relative h-24 bg-gradient-to-r from-[#0066B3] to-[#0077CC] p-6">
-                  <button
-                    onClick={onClose}
-                    className="absolute right-6 top-6 text-white/80 hover:text-white transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                  <div className="absolute -bottom-6 left-6 w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center">
-                    <Settings2 className="w-6 h-6 text-[#0066B3]" />
-                  </div>
-                </div>
-
-                <div className="flex h-[700px]">
+              <Dialog.Panel className="w-full max-w-7xl transform overflow-hidden rounded-lg bg-white shadow-2xl">
+                <div className="flex h-[800px]">
                   {/* Main Navigation */}
                   <div className="w-[280px] border-r border-gray-200">
-                    <div className="pt-12 pb-4">
-                      <div className="px-6">
-                        <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
-                        <p className="text-sm text-gray-500 mt-1">Manage your workspace settings</p>
+                    <div className="pt-8 pb-4">
+                      <div className="px-6 flex items-center justify-between">
+                        <div>
+                          <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
+                          <p className="text-sm text-gray-500 mt-1">Manage your workspace settings</p>
+                        </div>
+                        <button
+                          onClick={onClose}
+                          className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-colors rounded-lg"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
                       
                       <div className="mt-6">
@@ -133,7 +200,7 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                                 setSelectedTab(index);
                                 setSelectedItem(0);
                               }}
-                              className={`w-full flex items-center justify-between px-6 py-2.5 text-left
+                              className={`w-full flex items-center justify-between px-6 py-2.5 text-left transition-colors
                                 ${selectedTab === index ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
                             >
                               <div className="flex items-center gap-3">
@@ -163,7 +230,7 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                           <button
                             key={item.name}
                             onClick={() => setSelectedItem(itemIndex)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left mb-1
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left mb-1 transition-all
                               ${selectedItem === itemIndex 
                                 ? 'bg-white shadow-sm text-[#0066B3] border border-gray-100' 
                                 : 'text-gray-600 hover:bg-white hover:shadow-sm hover:border hover:border-gray-100'}`}
@@ -184,21 +251,25 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                     <div className="flex-1 pt-12 pb-6 px-8 overflow-y-auto">
                       <div className="mb-6">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-6 h-6 text-[#0066B3]">
-                            {React.createElement(tabs[selectedTab].items[selectedItem].icon)}
+                          <div className="w-10 h-10 rounded-xl bg-[#0066B3]/10 flex items-center justify-center">
+                            {React.createElement(tabs[selectedTab].items[selectedItem].icon, {
+                              className: "w-5 h-5 text-[#0066B3]"
+                            })}
                           </div>
-                          <h2 className="text-xl font-semibold text-gray-900">
-                            {tabs[selectedTab].items[selectedItem].name}
-                          </h2>
+                          <div>
+                            <h2 className="text-xl font-semibold text-gray-900">
+                              {tabs[selectedTab].items[selectedItem].name}
+                            </h2>
+                            <p className="text-sm text-gray-500">
+                              {tabs[selectedTab].items[selectedItem].description}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-500">
-                          {tabs[selectedTab].items[selectedItem].description}
-                        </p>
                       </div>
 
                       {/* Dynamic Content Based on Selection */}
-                      <div className="space-y-4">
-                        {selectedTab === 0 && selectedItem === 0 && !hasDepartments && (
+                      <div className="space-y-6">
+                        {selectedTab === 0 && selectedItem === 0 && departments.length === 0 && (
                           <div className="flex flex-col items-center justify-center text-center p-8 rounded-xl border-2 border-dashed border-gray-200">
                             <div className="p-4 bg-blue-50 rounded-xl mb-4">
                               <Building2 className="w-8 h-8 text-[#0066B3]" />
@@ -214,7 +285,48 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                           </div>
                         )}
 
-                        {selectedTab === 0 && selectedItem === 1 && !hasEmployees && (
+                        {selectedTab === 0 && selectedItem === 0 && departments.length > 0 && (
+                          <div className="space-y-6">
+                            <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                              <div className="flex items-start gap-3">
+                                <Building2 className="w-5 h-5 text-[#0066B3]" />
+                                <div>
+                                  <h3 className="text-sm font-medium text-gray-900">Department Management</h3>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Configure department settings, structure, and assignments. Manage department information and hierarchy.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="p-4 rounded-xl border border-gray-200 hover:border-[#0066B3]/20 hover:bg-blue-50/50 transition-colors group">
+                                <Building2 className="w-6 h-6 text-[#0066B3] mb-3" />
+                                <h3 className="text-sm font-medium text-gray-900 mb-1">Structure Management</h3>
+                                <p className="text-xs text-gray-500">Configure department hierarchy and structure</p>
+                              </div>
+                              <div className="p-4 rounded-xl border border-gray-200 hover:border-[#0066B3]/20 hover:bg-blue-50/50 transition-colors group">
+                                <Users className="w-6 h-6 text-[#0066B3] mb-3" />
+                                <h3 className="text-sm font-medium text-gray-900 mb-1">Employee Assignment</h3>
+                                <p className="text-xs text-gray-500">Manage department members and roles</p>
+                              </div>
+                              <div className="p-4 rounded-xl border border-gray-200 hover:border-[#0066B3]/20 hover:bg-blue-50/50 transition-colors group">
+                                <ChartBar className="w-6 h-6 text-[#0066B3] mb-3" />
+                                <h3 className="text-sm font-medium text-gray-900 mb-1">Department Analytics</h3>
+                                <p className="text-xs text-gray-500">View department performance and metrics</p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4">
+                              <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066B3] text-white rounded-xl hover:bg-[#0066B3]/90 transition-colors">
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-medium">Add New Department</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedTab === 0 && selectedItem === 1 && employees.length === 0 && (
                           <div className="flex flex-col items-center justify-center text-center p-8 rounded-xl border-2 border-dashed border-gray-200">
                             <div className="p-4 bg-blue-50 rounded-xl mb-4">
                               <Users className="w-8 h-8 text-[#0066B3]" />
@@ -223,12 +335,70 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                             <p className="text-sm text-gray-500 mt-1 mb-4 max-w-sm">
                               Add employees to your organization and assign them to departments
                             </p>
-                            <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066B3] text-white rounded-xl hover:bg-[#0066B3]/90 transition-colors">
+                            <button 
+                              onClick={() => setIsCreateEmployeeOpen(true)}
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066B3] text-white rounded-xl hover:bg-[#0066B3]/90 transition-colors"
+                            >
                               <Plus className="w-4 h-4" />
                               <span className="text-sm font-medium">Add Employee</span>
                             </button>
                           </div>
                         )}
+
+                        {selectedTab === 0 && selectedItem === 1 && employees.length > 0 && (
+                          <div className="space-y-6">
+                            <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                              <div className="flex items-start gap-3">
+                                <Users className="w-5 h-5 text-[#0066B3]" />
+                                <div>
+                                  <h3 className="text-sm font-medium text-gray-900">Employee Management</h3>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Configure employee settings, roles, and permissions. Manage employee information and access levels.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="p-4 rounded-xl border border-gray-200 hover:border-[#0066B3]/20 hover:bg-blue-50/50 transition-colors group">
+                                <UserCog className="w-6 h-6 text-[#0066B3] mb-3" />
+                                <h3 className="text-sm font-medium text-gray-900 mb-1">Role Management</h3>
+                                <p className="text-xs text-gray-500">Configure employee roles and permissions</p>
+                              </div>
+                              <div className="p-4 rounded-xl border border-gray-200 hover:border-[#0066B3]/20 hover:bg-blue-50/50 transition-colors group">
+                                <Building2 className="w-6 h-6 text-[#0066B3] mb-3" />
+                                <h3 className="text-sm font-medium text-gray-900 mb-1">Department Assignment</h3>
+                                <p className="text-xs text-gray-500">Manage employee department assignments</p>
+                              </div>
+                              <div className="p-4 rounded-xl border border-gray-200 hover:border-[#0066B3]/20 hover:bg-blue-50/50 transition-colors group">
+                                <Shield className="w-6 h-6 text-[#0066B3] mb-3" />
+                                <h3 className="text-sm font-medium text-gray-900 mb-1">Access Control</h3>
+                                <p className="text-xs text-gray-500">Set up employee access and permissions</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <button 
+                                onClick={handleShowAllEmployees}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
+                              >
+                                <Users className="w-4 h-4" />
+                                <span className="text-sm font-medium">Show All Employees</span>
+                              </button>
+
+                              <button 
+                                onClick={() => setIsCreateEmployeeOpen(true)}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066B3] text-white rounded-xl hover:bg-[#0066B3]/90 transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-medium">Add New Employee</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Add EmployeesTable modal */}
+                        
 
                         {selectedTab === 1 && selectedItem === 0 && (
                           <div className="space-y-6">
@@ -299,10 +469,10 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                         <p className="text-sm text-gray-500">
                           Changes are saved automatically
                         </p>
-                        <div className="flex items-center gap-3">
+                        <div className="flex gap-3">
                           <button
                             onClick={onClose}
-                            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+                            className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
                           >
                             Cancel
                           </button>
@@ -311,15 +481,26 @@ export default function ModalSettings({ isOpen, onClose }: ModalSettingsProps) {
                               // Add your save logic here
                               onClose();
                             }}
-                            className="px-4 py-2 text-sm text-white bg-[#0066B3] hover:bg-[#0066B3]/90 rounded-lg transition-colors"
+                            className="px-6 py-2.5 text-sm font-medium rounded-lg bg-[#0066B3] text-white hover:bg-[#0066B3]/90 transition-colors inline-flex items-center gap-2"
                           >
                             Save Changes
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Add CreateEmployee modal */}
+                <CreateEmployee 
+                  isOpen={isCreateEmployeeOpen}
+                  onClose={() => setIsCreateEmployeeOpen(false)}
+                  onSuccess={() => {
+                    setIsCreateEmployeeOpen(false);
+                    fetchData(); // Refresh the employee list
+                  }}
+                />
               </Dialog.Panel>
             </Transition.Child>
           </div>

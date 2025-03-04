@@ -1,17 +1,17 @@
 'use client';
-import React, { useState } from 'react';
-import { Clock, Plus, Trash2, Check, Calendar } from 'lucide-react';
-import { useShiftTypes } from '@/context/ShiftTypesContext';
-
-interface ShiftType {
-  id: string;
-  code: string;
-  name: string;
-  startTime?: string;
-  endTime?: string;
-  color: string;
-  requiresTime: boolean;
-}
+import React, { useState, useEffect } from 'react';
+import { Clock, Plus, Trash2, Check, Calendar, ChevronDown, AlertCircle } from 'lucide-react';
+import { shiftTypesApi, type ShiftType } from '@/api/shiftTypes';
+import { getShiftPlans } from '@/api/shiftPlans';
+import { ShiftPlan } from '@/types/prismaTypes';
+import { toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  fetchShiftTypesByPlan,
+  createShiftType,
+  deleteShiftType
+} from '@/store/features/shifts/shiftTypesSlice';
+import { openSettingsModal } from '@/store/features/ui/uiSlice';
 
 const colorOptions = [
   '#3B82F6', // blue
@@ -23,9 +23,13 @@ const colorOptions = [
 ];
 
 export default function CreateShiftTypes() {
-  const { shiftTypes, setShiftTypes } = useShiftTypes();
+  const dispatch = useAppDispatch();
+  const { list: shiftTypes, loading: isFetching } = useAppSelector(state => state.shiftTypes);
   const [isAdding, setIsAdding] = useState(false);
-  const [newShift, setNewShift] = useState<Partial<ShiftType>>({
+  const [isLoading, setIsLoading] = useState(false);
+  const [shiftPlans, setShiftPlans] = useState<ShiftPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<ShiftPlan | null>(null);
+  const [newShift, setNewShift] = useState({
     code: '',
     name: '',
     startTime: '',
@@ -34,27 +38,70 @@ export default function CreateShiftTypes() {
     requiresTime: true
   });
 
-  // Remove initialization of default shift types
-  React.useEffect(() => {
-    // No longer initializing default shift types
+  // Fetch shift plans on mount
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plans = await getShiftPlans();
+        setShiftPlans(plans);
+        if (plans.length > 0) {
+          setSelectedPlan(plans[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching shift plans:', error);
+        toast.error('Failed to fetch shift plans');
+      }
+    };
+    fetchPlans();
   }, []);
 
-  const handleAddShift = () => {
-    if (newShift.code && newShift.name) {
-      // Only validate times if requiresTime is true
-      if (newShift.requiresTime && (!newShift.startTime || !newShift.endTime)) {
-        return; // Don't add if times are required but missing
-      }
+  // Fetch shift types when selected plan changes
+  useEffect(() => {
+    if (selectedPlan) {
+      dispatch(fetchShiftTypesByPlan(selectedPlan.id));
+    }
+  }, [selectedPlan, dispatch]);
 
-      setShiftTypes([...shiftTypes, {
-        id: Date.now().toString(),
+  const handleAddShift = async () => {
+    if (!selectedPlan) {
+      toast.error('Please select a shift plan first', {
+        position: 'bottom-right',
+        richColors: true
+      });
+      return;
+    }
+
+    if (!newShift.code || !newShift.name) {
+      toast.error('Please fill in all required fields', {
+        position: 'bottom-right',
+        richColors: true
+      });
+      return;
+    }
+
+    if (newShift.requiresTime && (!newShift.startTime || !newShift.endTime)) {
+      toast.error('Please fill in all required time fields', {
+        position: 'bottom-right',
+        richColors: true
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await dispatch(createShiftType({
         code: newShift.code,
         name: newShift.name,
-        startTime: newShift.requiresTime ? newShift.startTime : undefined,
-        endTime: newShift.requiresTime ? newShift.endTime : undefined,
-        color: newShift.color || colorOptions[0],
-        requiresTime: newShift.requiresTime || false
-      }]);
+        color: newShift.color,
+        requiresTime: newShift.requiresTime,
+        startTime: newShift.startTime || undefined,
+        endTime: newShift.endTime || undefined,
+        shiftPlanId: selectedPlan.id
+      })).unwrap();
+      
+      // Refresh shift types after creation
+      await dispatch(fetchShiftTypesByPlan(selectedPlan.id));
+      
       setIsAdding(false);
       setNewShift({
         code: '',
@@ -64,166 +111,245 @@ export default function CreateShiftTypes() {
         color: colorOptions[0],
         requiresTime: true
       });
+    } catch (error) {
+      console.error('Error creating shift type:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteShift = (id: string) => {
-    setShiftTypes(shiftTypes.filter(shift => shift.id !== id));
+  const handleDeleteShift = async (shift: ShiftType) => {
+    try {
+      await dispatch(deleteShiftType(shift)).unwrap();
+      // Refresh shift types after deletion
+      if (selectedPlan) {
+        await dispatch(fetchShiftTypesByPlan(selectedPlan.id));
+      }
+    } catch (error) {
+      console.error('Error deleting shift type:', error);
+    }
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0066B3]"></div>
+      </div>
+    );
+  }
+
+  if (shiftPlans.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-8">
+        <div className="p-4 bg-blue-50 rounded-xl mb-4">
+          <Calendar className="w-8 h-8 text-[#0066B3]" />
+        </div>
+        <h3 className="text-base font-medium text-gray-900">No Shift Plans Created</h3>
+        <p className="text-sm text-gray-500 mt-1 mb-4 max-w-sm">
+          Create a shift plan first to start managing shift types
+        </p>
+        <button
+          onClick={() => dispatch(openSettingsModal({ initialTab: 1, initialItem: 0 }))}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066B3] text-white rounded-xl hover:bg-[#0066B3]/90 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="text-sm font-medium">Create Shift Plan</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Existing Shift Types */}
-      <div className="grid grid-cols-2 gap-4">
-        {shiftTypes.map((shift) => (
-          <div 
-            key={shift.id}
-            className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div 
-                  className="min-w-[2.5rem] h-10 px-2 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${shift.color}15` }}
-                >
-                  <span className="text-sm font-semibold" style={{ color: shift.color }}>
-                    {shift.code}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900">{shift.name}</h3>
-                  {shift.requiresTime && (
-                    <p className="text-xs text-gray-500">
-                      {shift.startTime} - {shift.endTime}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => handleDeleteShift(shift.id)}
-                className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Shift Plan Selector */}
+      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <label className="block text-xs font-medium text-gray-500 mb-2">
+          Select Shift Plan
+        </label>
+        <select
+          value={selectedPlan?.id || ''}
+          onChange={(e) => {
+            const plan = shiftPlans.find(p => p.id === e.target.value);
+            if (plan) setSelectedPlan(plan);
+          }}
+          className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        >
+          {shiftPlans.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name}{plan.department?.name ? ` (${plan.department.name})` : ''}
+            </option>
+          ))}
+        </select>
+        {selectedPlan && (
+          <div className="mt-2 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <span className="text-xs text-gray-500">
+              {new Date(selectedPlan.startDate).toLocaleDateString()} - {new Date(selectedPlan.endDate).toLocaleDateString()}
+            </span>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Add New Shift Type */}
-      {isAdding ? (
-        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Shift Code <span className="text-gray-400">(max 3 letters)</span>
-                </label>
-                <input
-                  type="text"
-                  maxLength={3}
-                  value={newShift.code}
-                  onChange={(e) => setNewShift({ ...newShift, code: e.target.value.toUpperCase() })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  placeholder="MOR"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Shift Name</label>
-                <input
-                  type="text"
-                  value={newShift.name}
-                  onChange={(e) => setNewShift({ ...newShift, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  placeholder="Morning"
-                />
-              </div>
-            </div>
-
-            {/* Time Toggle */}
-            <div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newShift.requiresTime}
-                  onChange={(e) => setNewShift({ ...newShift, requiresTime: e.target.checked })}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0066B3]"></div>
-                <span className="ml-3 text-sm text-gray-700">Requires Time Specification</span>
-              </label>
-            </div>
-
-            {/* Time Fields - Only show if requiresTime is true */}
-            {newShift.requiresTime && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Start Time</label>
-                  <input
-                    type="time"
-                    value={newShift.startTime}
-                    onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">End Time</label>
-                  <input
-                    type="time"
-                    value={newShift.endTime}
-                    onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">Shift Color</label>
-              <div className="flex items-center gap-2">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewShift({ ...newShift, color })}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      newShift.color === color ? 'ring-2 ring-offset-2 ring-blue-500' : ''
-                    }`}
-                    style={{ backgroundColor: color }}
-                  >
-                    {newShift.color === color && (
-                      <Check className="w-3 h-3 text-white" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setIsAdding(false)}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddShift}
-                className="px-3 py-1.5 text-sm text-white bg-[#0066B3] hover:bg-[#0066B3]/90 rounded-lg transition-colors"
-              >
-                Add Shift Type
-              </button>
-            </div>
-          </div>
+      {/* No Shift Plan Selected Message */}
+      {!selectedPlan ? (
+        <div className="p-6 text-center">
+          <p className="text-gray-500">Please select a shift plan to manage shift types</p>
         </div>
       ) : (
-        <button
-          onClick={() => setIsAdding(true)}
-          className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 hover:border-blue-500/20 hover:bg-blue-50 hover:text-[#0066B3] transition-all"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Add New Shift Type</span>
+        <>
+          {/* Existing Shift Types */}
+          <div className="grid grid-cols-2 gap-4">
+            {shiftTypes.map((shift) => (
+              <div 
+                key={shift.id}
+                className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="min-w-[2.5rem] h-10 px-2 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${shift.color}15` }}
+                    >
+                      <span className="text-sm font-semibold" style={{ color: shift.color }}>
+                        {shift.code}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900">{shift.name}</h3>
+                      {shift.requiresTime && (
+                        <p className="text-xs text-gray-500">
+                          {shift.startTime} - {shift.endTime}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteShift(shift)}
+                    className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </button>
+
+          {/* Add New Shift Type */}
+          {isAdding ? (
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Shift Code <span className="text-gray-400">(max 3 letters)</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={3}
+                      value={newShift.code}
+                      onChange={(e) => setNewShift({ ...newShift, code: e.target.value.toUpperCase() })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="MOR"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Shift Name</label>
+                    <input
+                      type="text"
+                      value={newShift.name}
+                      onChange={(e) => setNewShift({ ...newShift, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Morning"
+                    />
+                  </div>
+                </div>
+
+                {/* Time Toggle */}
+                <div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newShift.requiresTime}
+                      onChange={(e) => setNewShift({ ...newShift, requiresTime: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0066B3]"></div>
+                    <span className="ml-3 text-sm text-gray-700">Requires Time Specification</span>
+                  </label>
+                </div>
+
+                {/* Time Fields - Only show if requiresTime is true */}
+                {newShift.requiresTime && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={newShift.startTime}
+                        onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={newShift.endTime}
+                        onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Shift Color</label>
+                  <div className="flex items-center gap-2">
+                    {colorOptions.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setNewShift({ ...newShift, color })}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          newShift.color === color ? 'ring-2 ring-offset-2 ring-blue-500' : ''
+                        }`}
+                        style={{ backgroundColor: color }}
+                      >
+                        {newShift.color === color && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setIsAdding(false)}
+                    className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddShift}
+                    className="px-3 py-1.5 text-sm text-white bg-[#0066B3] hover:bg-[#0066B3]/90 rounded-lg transition-colors"
+                  >
+                    Add Shift Type
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAdding(true)}
+              className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 hover:border-blue-500/20 hover:bg-blue-50 hover:text-[#0066B3] transition-all"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" />
+                <span className="text-sm font-medium">Add New Shift Type</span>
+              </div>
+            </button>
+          )}
+        </>
       )}
     </div>
   );

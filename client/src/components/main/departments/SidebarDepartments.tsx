@@ -41,7 +41,10 @@ export default function SidebarDepartments() {
             </button>
           </div>
           <div className="space-y-0.5">
-            <button className="w-full flex items-center gap-2 p-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+            <button 
+              onClick={() => setIsModalOpen(true)} 
+              className="w-full flex items-center gap-2 p-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+            >
               <Building2 className="w-4 h-4" />
               <span>Add Department</span>
             </button>
@@ -76,34 +79,7 @@ export default function SidebarDepartments() {
           </div>
         </div>
 
-        {/* Filters Section */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Filters</h3>
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs text-gray-500 mb-1.5 block">Status</label>
-              <select className="w-full text-sm border-gray-200 rounded-lg">
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Inactive</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1.5 block">Location</label>
-              <select className="w-full text-sm border-gray-200 rounded-lg">
-                <option>All Locations</option>
-                <option>Headquarters</option>
-                <option>Remote</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-gray-400" />
-            <span className="text-sm font-medium text-gray-700">All Departments</span>
-          </div>
+        <div className="flex justify-end mb-6">
           <button
             onClick={() => setIsModalOpen(true)}
             className="p-2 text-gray-400 hover:text-gray-500 transition-colors"
@@ -115,10 +91,13 @@ export default function SidebarDepartments() {
         <CreateDepartmentModal 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onSuccess={() => setIsModalOpen(false)}
         />
         <ModalSettings
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+          initialTab={0}
+          initialItem={0}
         />
       </div>
     </aside>

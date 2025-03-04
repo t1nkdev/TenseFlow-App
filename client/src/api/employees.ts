@@ -9,11 +9,12 @@ export const getEmployees = async () => {
 export const createEmployee = async (data: {
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
   phone?: string;
   employeeId: string;
   role: string;
   departmentId: string;
+  group?: string;
   startDate: string;
   status?: string;
 }) => {
@@ -26,10 +27,17 @@ export const createEmployee = async (data: {
   const responseData = await response.json();
   
   if (!response.ok) {
-    throw new Error(responseData.details || responseData.error || 'Failed to create employee');
+    // Return error object instead of throwing
+    return {
+      error: true,
+      message: responseData.details || responseData.error || 'Failed to create employee'
+    };
   }
   
-  return responseData;
+  return {
+    error: false,
+    data: responseData
+  };
 };
 
 export const deleteEmployee = async (id: string): Promise<{ message: string }> => {
@@ -44,4 +52,37 @@ export const deleteEmployee = async (id: string): Promise<{ message: string }> =
   }
   
   return data;
+};
+
+export const updateEmployee = async (id: string, data: {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  employeeId: string;
+  role: string;
+  departmentId: string;
+  group?: string;
+  startDate: string;
+  status?: string;
+}) => {
+  const response = await fetch(`${API_URL}/api/employees/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  const responseData = await response.json();
+  
+  if (!response.ok) {
+    return {
+      error: true,
+      message: responseData.details || responseData.error || 'Failed to update employee'
+    };
+  }
+  
+  return {
+    error: false,
+    data: responseData
+  };
 }; 

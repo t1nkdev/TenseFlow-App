@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Users, Folder, FileText, Settings, Filter, UserPlus, Building2, ShieldCheck } from 'lucide-react';
+import { Plus, Users, Folder, FileText, Settings, Filter, UserPlus, Building2, ShieldCheck, UserCog } from 'lucide-react';
 import CreateEmployeeModal from '../../modals/employees/CreateEmployee';
+import CreateRolesModal from '../../modals/employees/CreateRolesEmployee';
 import ModalSettings from '../../modals/settings/ModalSettings';
 
 export default function SidebarEmployees() {
   const [isQuickActionModalOpen, setIsQuickActionModalOpen] = useState(false);
+  const [isRolesModalOpen, setIsRolesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('employees');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -29,25 +31,30 @@ export default function SidebarEmployees() {
       </div>
 
       <div className="flex-1 p-3 space-y-3">
-        {/* Quick Actions */}
+        {/* Employee Functions */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-900">Quick Actions</h3>
-            <button 
-              onClick={() => setIsQuickActionModalOpen(true)}
-              className="p-1 hover:bg-gray-50 rounded-lg"
-            >
-              <Plus className="w-4 h-4 text-gray-400" />
-            </button>
+          <div className="flex items-center gap-2 mb-2">
+            <UserCog className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-medium text-gray-900">Employee Functions</h3>
           </div>
           <div className="space-y-0.5">
-            <button className="w-full flex items-center gap-2 p-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+            <button 
+              onClick={() => setIsQuickActionModalOpen(true)}
+              className="w-full flex items-center gap-2 p-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+            >
               <UserPlus className="w-4 h-4" />
               <span>Add New Employee</span>
             </button>
             <button className="w-full flex items-center gap-2 p-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
               <Building2 className="w-4 h-4" />
               <span>Manage Departments</span>
+            </button>
+            <button 
+              onClick={() => setIsRolesModalOpen(true)}
+              className="w-full flex items-center gap-2 p-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Manage Roles</span>
             </button>
           </div>
         </div>
@@ -152,10 +159,26 @@ export default function SidebarEmployees() {
       <CreateEmployeeModal 
         isOpen={isQuickActionModalOpen}
         onClose={() => setIsQuickActionModalOpen(false)}
+        onSuccess={() => {
+          setIsQuickActionModalOpen(false);
+          // Refresh employee list if needed
+        }}
       />
+
+      <CreateRolesModal
+        isOpen={isRolesModalOpen}
+        onClose={() => setIsRolesModalOpen(false)}
+        onSuccess={() => {
+          setIsRolesModalOpen(false);
+          // Refresh roles list if needed
+        }}
+      />
+
       <ModalSettings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        initialTab={0}
+        initialItem={1}
       />
     </aside>
   );

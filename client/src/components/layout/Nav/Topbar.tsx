@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
@@ -12,12 +12,15 @@ export default function TopBar() {
   const [homeMenuOpen, setHomeMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const menuItems = [
-    { name: 'My Home', href: '#' },
+    { name: 'Main', href: '/main', isActive: true },
     { name: 'Analytics', href: '#' },
     { name: 'Billing', href: '#' },
-    { name: 'Employee Management', href: '#' }
+    { name: 'Documents', href: '/documents' },
+    { name: 'Settings', href: '/settings' },
+    
   ];
 
   useEffect(() => {
@@ -28,6 +31,25 @@ export default function TopBar() {
 
     return () => clearTimeout(timer);
   }, [pathname]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setHomeMenuOpen(false);
+      }
+    }
+
+    // Add event listener when dropdown is open
+    if (homeMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [homeMenuOpen]);
 
   return (
     <div className="fixed top-0 w-full z-40">
@@ -48,22 +70,26 @@ export default function TopBar() {
             </div>
 
             {/* Home Dropdown */}
-            <div className="relative ml-8">
+            <div className="relative ml-8" ref={dropdownRef}>
               <button 
                 onClick={() => setHomeMenuOpen(!homeMenuOpen)}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-medium text-gray-700 hover:text-[#0066B3] hover:bg-white"
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-[#0066B3] hover:bg-gray-50 transition-colors"
               >
-                Main <ChevronDown className="w-4 h-4" />
+                Main <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${homeMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu */}
               {homeMenuOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 overflow-hidden">
                   {menuItems.map((item, index) => (
                     <Link
                       key={index}
                       href={item.href}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#0066B3]"
+                      className={`flex items-center px-4 py-2 text-sm ${
+                        item.isActive 
+                          ? 'bg-blue-50 text-[#0066B3] font-medium' 
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-[#0066B3]'
+                      }`}
                       onClick={() => setHomeMenuOpen(false)}
                     >
                       {item.name}

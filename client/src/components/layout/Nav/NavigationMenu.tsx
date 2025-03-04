@@ -23,7 +23,7 @@ export default function NavigationMenu() {
         'Reports',
         'Departments',
         'Analytics',
-        'Settings'
+       
       ].map((item) => (
         <button 
           key={item}

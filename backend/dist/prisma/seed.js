@@ -81,8 +81,14 @@ function main() {
                     name: "Default Plan",
                     startDate: new Date().toISOString(),
                     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                    status: "PUBLISHED",
-                    departmentId: departments[0].id
+                    status: "ACTIVE",
+                    departments: {
+                        create: [{
+                                department: {
+                                    connect: { id: departments[0].id }
+                                }
+                            }]
+                    }
                 }
             });
             // Seed shifts with shiftPlanId

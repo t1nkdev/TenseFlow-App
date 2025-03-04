@@ -8,8 +8,14 @@ import $Result = runtime.Types.Result
 export type PrismaPromise<T> = $Public.PrismaPromise<T>
 
 // Model Types
-export type Department = $Public.Department
-export type Employee = $Public.Employee
+export type Department = $Public.Department & {
+  groups: string[];
+  manager?: Employee | null;
+  employees?: Employee[];
+}
+export type Employee = $Public.Employee & {
+  group?: string;
+}
 export type Shift = $Public.Shift
 export type ShiftType = $Public.ShiftType
 export type Schedule = $Public.Schedule
@@ -48,7 +54,7 @@ export type EmployeeRelations = {
 }
 
 export type ShiftPlanRelations = {
-  department?: Department
+  departments?: { id: string; department: Department }[]
   shiftTypes?: ShiftType[]
   schedules?: Schedule[]
 }

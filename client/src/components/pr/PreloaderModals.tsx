@@ -14,9 +14,11 @@ export default function PreloaderModals({ onFinish }: PreloaderModalsProps) {
   }, [onFinish]);
 
   return (
-    <div className="flex-1 flex items-center justify-center">
-      {/* Slower Circle Spinner */}
-      <div className="w-12 h-12 border-4 border-[#0066B3]/20 border-t-[#0066B3] rounded-full animate-[spin_1.2s_linear_infinite]" />
+    <div className="flex-1 grid place-items-center">
+      <div className="translate-y-16">
+        {/* Slower Circle Spinner */}
+        <div className="w-12 h-12 border-4 border-[#0066B3]/20 border-t-[#0066B3] rounded-full animate-[spin_1.2s_linear_infinite]" />
+      </div>
 
       {/* Option 2: Three Dots */}
       {/* <div className="flex gap-2">
