@@ -442,9 +442,9 @@ export default function CreateEmployeeModal({ isOpen, onClose, onSuccess, employ
                         >
                           <option value="">Select Role</option>
                           <option value="manager">Manager</option>
-                          <option value="team_lead">Team Lead</option>
-                          <option value="senior">Senior</option>
-                          <option value="junior">Junior</option>
+                          <option value="team lead">Team Lead</option>
+                          <option value="machine operators">Machine Operators</option>
+                          
                         </select>
                         {errors.role && (
                           <p className="mt-1 text-xs text-red-500">{errors.role}</p>

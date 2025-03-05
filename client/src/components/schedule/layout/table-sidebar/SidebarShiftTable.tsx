@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Plus, Calendar, Folder, FileText, Clock, Building2, ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import { Plus, Calendar, Folder, FileText, Clock, Building2, ChevronDown, ChevronRight, Settings, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import styles from '@/app/main/shift-schedule/page.module.css';
 import CreateShiftPlanModal from '../../../modals/schedule/CreateShiftPlan';
@@ -61,6 +61,7 @@ export const SidebarShiftTable = ({ onShiftPlanSelect, selectedPlanId }: Sidebar
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAllPlans, setShowAllPlans] = useState(false);
 
   // Load user preferences on component mount
   useEffect(() => {
@@ -163,6 +164,48 @@ export const SidebarShiftTable = ({ onShiftPlanSelect, selectedPlanId }: Sidebar
     
     return true;
   });
+
+  // Determine which plans to display based on showAllPlans state
+  let displayedPlans: ShiftPlan[] = [];
+  let hasSelectedPlanSeparator = false;
+  
+  if (showAllPlans) {
+    // Show all plans when expanded
+    displayedPlans = filteredPlans;
+  } else {
+    // Get the first 3 plans
+    const initialPlans = filteredPlans.slice(0, 3);
+    
+    // Check if the selected plan is in the first 3
+    const selectedPlanInInitial = selectedPlanId 
+      ? initialPlans.some((plan: ShiftPlan) => plan.id === selectedPlanId)
+      : false;
+    
+    // If selected plan is in the first 3, just show the first 3
+    if (selectedPlanInInitial || !selectedPlanId) {
+      displayedPlans = initialPlans;
+    } else {
+      // Otherwise, find the selected plan
+      const selectedPlan = filteredPlans.find((plan: ShiftPlan) => plan.id === selectedPlanId);
+      
+      // Add it to the displayed plans if found
+      if (selectedPlan) {
+        displayedPlans = [...initialPlans, selectedPlan];
+        hasSelectedPlanSeparator = true;
+      } else {
+        displayedPlans = initialPlans;
+      }
+    }
+  }
+  
+  // Calculate how many more plans are hidden
+  const hiddenPlansCount = filteredPlans.length - (showAllPlans ? filteredPlans.length : Math.min(3, displayedPlans.length));
+  const hasMorePlans = hiddenPlansCount > 0;
+
+  // Toggle function for showing all plans
+  const toggleShowAllPlans = () => {
+    setShowAllPlans(!showAllPlans);
+  };
 
   // Handle shift plan selection
   const handleShiftPlanSelect = (plan: ShiftPlan) => {
@@ -323,17 +366,44 @@ export const SidebarShiftTable = ({ onShiftPlanSelect, selectedPlanId }: Sidebar
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredPlans.map((plan: ShiftPlan) => (
-                <ShiftPlanItem
-                  key={plan.id}
-                  plan={plan}
-                  selectedPlanId={selectedPlanId}
-                  onSelect={handleShiftPlanSelect}
-                  onStatusChange={handleStatusChange}
-                  setPlanToDelete={setPlanToDelete}
-                  onEdit={handleEditPlan}
-                />
+              {displayedPlans.map((plan: ShiftPlan, index: number) => (
+                <React.Fragment key={plan.id}>
+                  {hasSelectedPlanSeparator && index === 3 && (
+                    <div className="flex items-center justify-center gap-2 py-1">
+                      <div className="h-px bg-gray-200 flex-1"></div>
+                      <span className="text-xs text-gray-400">Selected Plan</span>
+                      <div className="h-px bg-gray-200 flex-1"></div>
+                    </div>
+                  )}
+                  <ShiftPlanItem
+                    plan={plan}
+                    selectedPlanId={selectedPlanId}
+                    onSelect={handleShiftPlanSelect}
+                    onStatusChange={handleStatusChange}
+                    setPlanToDelete={setPlanToDelete}
+                    onEdit={handleEditPlan}
+                  />
+                </React.Fragment>
               ))}
+              
+              {hasMorePlans && (
+                <button 
+                  onClick={toggleShowAllPlans}
+                  className="w-full flex items-center justify-center gap-1 p-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  {showAllPlans ? (
+                    <>
+                      <ChevronUp className="w-3 h-3" />
+                      <span>Show Less</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3" />
+                      <span>Show {hiddenPlansCount} More</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>

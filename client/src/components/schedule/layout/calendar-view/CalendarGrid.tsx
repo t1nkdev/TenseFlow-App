@@ -1,8 +1,9 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Employee } from '@/types/prismaTypes';
 import { getWeekNumber, isToday, isWeekend, CalendarDay } from '../../../../utils/DateUtils';
 import ShiftCell from './ShiftCell';
+import './calendar-styles.css';
 
 interface CalendarGridProps {
   weeks: CalendarDay[][];
@@ -83,24 +84,39 @@ export default function CalendarGrid({
   // Get all groups in sorted order
   const groups = Object.keys(groupedEmployees).sort();
 
+  // Add state for tracking hover
+  const [hoverState, setHoverState] = useState<{
+    employeeId: string | null;
+    date: string | null;
+  }>({
+    employeeId: null,
+    date: null
+  });
+
+  // Function to handle cell hover
+  const handleCellHover = (employeeId: string, date: Date) => {
+    setHoverState({
+      employeeId,
+      date: date.toISOString()
+    });
+  };
+
+  // Function to clear hover state
+  const handleCellLeave = () => {
+    setHoverState({
+      employeeId: null,
+      date: null
+    });
+  };
+
   return (
     <div className="overflow-auto h-full">
       <div className="min-w-max">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10 bg-white">
-            {/* Week Row */}
+            {/* Week Row with buttons */}
             <tr>
-              <th className="sticky left-0 z-20 w-[200px] bg-white border-b border-gray-200">
-                <div className="flex items-center h-10 pl-6">
-                  <span className="text-xs font-medium text-gray-500">Employee</span>
-                </div>
-              </th>
-              <th className="sticky left-[200px] z-20 w-[80px] bg-white border-b border-gray-200 border-l border-r">
-                <div className="flex items-center justify-center h-10">
-                  <span className="text-xs font-medium text-gray-500">Group</span>
-                </div>
-              </th>
-              <th className="border-b border-gray-200" colSpan={totalDays}>
+              <th className="sticky left-0 z-20 w-[280px] bg-white border-b border-gray-200">
                 <div className="flex items-center h-10 pl-6 gap-2">
                   <button 
                     type="button"
@@ -122,18 +138,15 @@ export default function CalendarGrid({
                   </button>
                 </div>
               </th>
+              <th className="border-b border-gray-200" colSpan={totalDays}>
+                {/* Empty space above week numbers */}
+              </th>
             </tr>
+            
             {/* Week Numbers Row */}
             <tr>
-              <th className="sticky left-0 z-20 w-[200px] bg-white border-b border-gray-200">
-                <div className="flex items-center h-8">
-                  <span className="text-xs font-medium text-gray-500 pl-6">ID/Name</span>
-                </div>
-              </th>
-              <th className="sticky left-[200px] z-20 w-[80px] bg-white border-b border-gray-200 border-l border-r">
-                <div className="flex items-center justify-center h-8">
-                  <span className="text-xs font-medium text-gray-500">Group</span>
-                </div>
+              <th className="sticky left-0 z-20 w-[280px] bg-white border-b border-gray-200">
+                {/* Empty space for employee columns */}
               </th>
               {weeks.map((week, weekIndex) => {
                 // Calculate the week number for this week
@@ -151,16 +164,25 @@ export default function CalendarGrid({
                 );
               })}
             </tr>
-            {/* Days Row */}
+            
+            {/* Column Headers and Days Row */}
             <tr>
-              <th className="sticky left-0 z-20 w-[200px] bg-white border-b border-gray-200">
-                <div className="flex items-center h-8 pl-6">
-                  <span className="text-xs font-medium text-gray-700">Employee</span>
-                </div>
-              </th>
-              <th className="sticky left-[200px] z-20 w-[80px] bg-white border-b border-gray-200 border-l border-r">
-                <div className="flex items-center justify-center h-8">
-                  <span className="text-xs font-medium text-gray-700">Group</span>
+              <th className="sticky left-0 z-20 w-[280px] bg-white border-b border-gray-200">
+                <div className="flex items-center h-8">
+                  <div className="grid grid-cols-[80px_1fr] gap-2 w-full pl-6">
+                    <div className="flex items-center space-x-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                      </svg>
+                      <span className="text-xs font-medium text-gray-700">ID</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="text-xs font-medium text-gray-700">Name</span>
+                    </div>
+                  </div>
                 </div>
               </th>
               {weeks.map((week, weekIndex) => (
@@ -168,6 +190,7 @@ export default function CalendarGrid({
                   {week.map((day, dayIndex) => {
                     const isTodayDate = isToday(day.date);
                     const isWeekendDay = isWeekend(day.date);
+                    const isHovered = hoverState.date === day.date.toISOString();
                     
                     return (
                       <th
@@ -180,7 +203,8 @@ export default function CalendarGrid({
                             : isWeekendDay
                             ? 'bg-gray-50/50'
                             : ''
-                        } ${dayIndex === 0 && weekIndex > 0 ? 'border-l border-gray-200' : ''}`}
+                        } ${dayIndex === 0 && weekIndex > 0 ? 'border-l border-gray-200' : ''}
+                        ${isHovered ? 'bg-blue-100' : ''}`}
                       >
                         <div className="flex flex-col items-center">
                           <span className={`text-[11px] font-medium ${
@@ -204,21 +228,46 @@ export default function CalendarGrid({
             </tr>
           </thead>
           <tbody>
-            {/* Render employees by group */}
-            {Object.keys(groupedEmployees).sort().map(group => (
+            {/* Render employees by group with group headers */}
+            {groups.map(group => (
               <React.Fragment key={group}>
+                {/* Group header row */}
+                <tr className="group-header">
+                  <td 
+                    colSpan={totalDays + 1} 
+                    className="border-b border-gray-200"
+                  >
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span>
+                        {group === 'No Group' ? 'Unassigned' : group}
+                      </span>
+                      <span>
+                        {groupedEmployees[group].length} {groupedEmployees[group].length === 1 ? 'employee' : 'employees'}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                
+                {/* Employees in this group */}
                 {groupedEmployees[group].map((employee, empIndex) => {
-                  const isFirstInGroup = empIndex === 0;
+                  const isRowHovered = hoverState.employeeId === employee.id;
                   
                   return (
                     <tr 
                       key={employee.id} 
-                      className={`hover:bg-gray-50/80 ${empIndex % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'}`}
+                      className={`${empIndex % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'} 
+                        ${isRowHovered ? 'bg-blue-50' : 'hover:bg-gray-50/80'}`}
                     >
                       {/* Employee info */}
-                      <td className="sticky left-0 z-10 w-[200px] border-b border-gray-200 bg-white">
+                      <td 
+                        className={`sticky left-0 z-10 border-b border-r border-gray-200 
+                          ${isRowHovered ? 'bg-blue-50' : empIndex % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'}`}
+                      >
                         <div className="flex items-center py-1.5 pl-6">
-                          <div className="grid grid-cols-[60px_1fr] gap-2 w-full">
+                          <div className="grid grid-cols-[80px_1fr] gap-2 w-full">
                             <span className="text-xs font-medium text-gray-500">{employee.employeeId}</span>
                             <div className="flex flex-col">
                               <span className="text-sm font-medium text-gray-800 truncate">
@@ -232,22 +281,6 @@ export default function CalendarGrid({
                         </div>
                       </td>
                       
-                      {/* Group column - only show for first employee in group */}
-                      {isFirstInGroup ? (
-                        <td 
-                          className="sticky left-[200px] z-10 w-[80px] border-b border-gray-200 border-l border-r bg-white text-center"
-                          rowSpan={groupedEmployees[group].length}
-                        >
-                          {employee.group ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
-                              {employee.group}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
-                        </td>
-                      ) : null}
-                      
                       {/* Shift cells */}
                       {weeks.map((week, weekIndex) => (
                         <React.Fragment key={weekIndex}>
@@ -256,14 +289,20 @@ export default function CalendarGrid({
                             const cellValue = getCellValue(employee.id, day.date);
                             const isTodayDate = isToday(day.date);
                             const isWeekendDay = isWeekend(day.date);
+                            const isCellHovered = hoverState.employeeId === employee.id && 
+                                                 hoverState.date === day.date.toISOString();
+                            const isColumnHovered = hoverState.date === day.date.toISOString();
 
                             return (
                               <td
                                 key={`${weekIndex}-${dayIndex}`}
                                 className={`p-0 border-r border-b border-gray-200 ${
                                   dayIndex === 0 && weekIndex > 0 ? 'border-l border-gray-200' : ''
-                                } ${isWeekendDay ? 'bg-gray-50' : ''} ${isTodayDate ? 'bg-blue-50' : ''}`}
+                                } ${isWeekendDay ? 'bg-gray-50' : ''} ${isTodayDate ? 'bg-blue-50' : ''}
+                                ${isCellHovered ? 'bg-blue-200' : isColumnHovered || isRowHovered ? 'bg-blue-100' : ''}`}
                                 style={{ width: '26px', height: '26px' }}
+                                onMouseEnter={() => handleCellHover(employee.id, day.date)}
+                                onMouseLeave={handleCellLeave}
                               >
                                 {isEditing ? (
                                   <div 
@@ -298,16 +337,22 @@ export default function CalendarGrid({
                                     />
                                   </div>
                                 ) : (
-                                  <ShiftCell
-                                    employeeId={employee.id}
-                                    date={day.date}
-                                    shiftCode={cellValue.code}
-                                    shiftColor={cellValue.color}
-                                    isEditable={isEditable}
-                                    isWithinRange={true}
-                                    onClick={onCellClick}
-                                    onKeyDown={onCellKeyDown}
-                                  />
+                                  <div 
+                                    className="w-full h-full"
+                                    onMouseEnter={() => handleCellHover(employee.id, day.date)}
+                                    onMouseLeave={handleCellLeave}
+                                  >
+                                    <ShiftCell
+                                      employeeId={employee.id}
+                                      date={day.date}
+                                      shiftCode={cellValue.code}
+                                      shiftColor={cellValue.color}
+                                      isEditable={isEditable}
+                                      isWithinRange={true}
+                                      onClick={onCellClick}
+                                      onKeyDown={onCellKeyDown}
+                                    />
+                                  </div>
                                 )}
                               </td>
                             );
@@ -324,4 +369,4 @@ export default function CalendarGrid({
       </div>
     </div>
   );
-} 
+}

@@ -13,13 +13,45 @@ import {
 } from '@/store/features/shifts/shiftTypesSlice';
 import { openSettingsModal } from '@/store/features/ui/uiSlice';
 
+// Group colors by categories for better organization
+const colorCategories = {
+  primary: [
+    '#3B82F6', // blue
+    '#10B981', // green
+    '#8B5CF6', // purple
+    '#F59E0B', // yellow
+    '#EF4444', // red
+    '#EC4899', // pink
+  ],
+  secondary: [
+    '#6366F1', // indigo
+    '#14B8A6', // teal
+    '#F97316', // orange
+    '#A855F7', // violet
+    '#06B6D4', // cyan
+    '#D946EF', // fuchsia
+  ],
+  extended: [
+    '#0EA5E9', // sky blue
+    '#84CC16', // lime
+    '#64748B', // slate
+    '#9333EA', // purple-600
+    '#4F46E5', // indigo-600
+    '#0891B2', // cyan-600
+    '#16A34A', // green-600
+    '#CA8A04', // yellow-600
+    '#DC2626', // red-600
+    '#DB2777', // pink-600
+    '#2563EB', // blue-600
+    '#4338CA', // indigo-700
+  ]
+};
+
+// Flat list for backward compatibility
 const colorOptions = [
-  '#3B82F6', // blue
-  '#10B981', // green
-  '#8B5CF6', // purple
-  '#F59E0B', // yellow
-  '#EF4444', // red
-  '#EC4899', // pink
+  ...colorCategories.primary,
+  ...colorCategories.secondary,
+  ...colorCategories.extended
 ];
 
 export default function CreateShiftTypes() {
@@ -29,12 +61,19 @@ export default function CreateShiftTypes() {
   const [isLoading, setIsLoading] = useState(false);
   const [shiftPlans, setShiftPlans] = useState<ShiftPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<ShiftPlan | null>(null);
+  const [showExtendedColors, setShowExtendedColors] = useState(false);
+  const [showCustomColorPicker, setShowCustomColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState({
+    r: 59, // Default blue
+    g: 130,
+    b: 246
+  });
   const [newShift, setNewShift] = useState({
     code: '',
     name: '',
     startTime: '',
     endTime: '',
-    color: colorOptions[0],
+    color: colorCategories.primary[0],
     requiresTime: true
   });
 
@@ -108,7 +147,7 @@ export default function CreateShiftTypes() {
         name: '',
         startTime: '',
         endTime: '',
-        color: colorOptions[0],
+        color: colorCategories.primary[0],
         requiresTime: true
       });
     } catch (error) {
@@ -128,6 +167,136 @@ export default function CreateShiftTypes() {
     } catch (error) {
       console.error('Error deleting shift type:', error);
     }
+  };
+
+  // Convert RGB to hex
+  const rgbToHex = (r: number, g: number, b: number) => {
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  };
+
+  // Convert hex to RGB
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 0, g: 0, b: 0 };
+  };
+
+  // Apply custom color
+  const applyCustomColor = () => {
+    const hexColor = rgbToHex(customColor.r, customColor.g, customColor.b);
+    setNewShift({ ...newShift, color: hexColor });
+    setShowCustomColorPicker(false);
+  };
+
+  // Add this to your component where the color selection UI is
+  const renderColorOptions = () => {
+    // Determine which color sets to show based on the showExtendedColors state
+    const colorsToShow = showExtendedColors 
+      ? [...colorCategories.primary, ...colorCategories.secondary, ...colorCategories.extended]
+      : [...colorCategories.primary, ...colorCategories.secondary];
+    
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <label className="block text-sm font-medium text-gray-700">Color</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowExtendedColors(!showExtendedColors)}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              {showExtendedColors ? 'Show fewer colors' : 'Show more colors'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCustomColorPicker(!showCustomColorPicker)}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              {showCustomColorPicker ? 'Hide custom color' : 'Custom color'}
+            </button>
+          </div>
+        </div>
+        
+        {showCustomColorPicker && (
+          <div className="p-3 border rounded-md mb-2 bg-gray-50">
+            <div className="mb-2 flex items-center gap-2">
+              <div 
+                className="w-10 h-10 rounded-md border border-gray-300" 
+                style={{ backgroundColor: rgbToHex(customColor.r, customColor.g, customColor.b) }}
+              />
+              <div className="text-xs font-mono">
+                {rgbToHex(customColor.r, customColor.g, customColor.b)}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs text-gray-600">R: {customColor.r}</label>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="255" 
+                  value={customColor.r} 
+                  onChange={(e) => setCustomColor({...customColor, r: parseInt(e.target.value)})}
+                  className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600">G: {customColor.g}</label>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="255" 
+                  value={customColor.g} 
+                  onChange={(e) => setCustomColor({...customColor, g: parseInt(e.target.value)})}
+                  className="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600">B: {customColor.b}</label>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="255" 
+                  value={customColor.b} 
+                  onChange={(e) => setCustomColor({...customColor, b: parseInt(e.target.value)})}
+                  className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={applyCustomColor}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Apply Color
+              </button>
+            </div>
+          </div>
+        )}
+        
+        <div className="grid grid-cols-6 gap-2">
+          {colorsToShow.map((color) => (
+            <div
+              key={color}
+              onClick={() => setNewShift({ ...newShift, color })}
+              className={`h-8 w-8 rounded-full cursor-pointer border-2 ${
+                newShift.color === color ? 'border-gray-900' : 'border-gray-200'
+              }`}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </div>
+      </div>
+    );
   };
 
   if (isFetching) {
@@ -302,25 +471,7 @@ export default function CreateShiftTypes() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Shift Color</label>
-                  <div className="flex items-center gap-2">
-                    {colorOptions.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setNewShift({ ...newShift, color })}
-                        className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                          newShift.color === color ? 'ring-2 ring-offset-2 ring-blue-500' : ''
-                        }`}
-                        style={{ backgroundColor: color }}
-                      >
-                        {newShift.color === color && (
-                          <Check className="w-3 h-3 text-white" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {renderColorOptions()}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button
