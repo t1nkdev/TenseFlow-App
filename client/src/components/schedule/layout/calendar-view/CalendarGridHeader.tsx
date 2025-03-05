@@ -1,15 +1,40 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { isToday, isWeekend, CalendarDay } from '../../../../utils/DateUtils';
+import TodayDateIndicator from './TodayDateIndicator';
+import './calendar-styles.css';
 
 interface CalendarGridHeaderProps {
   weeks: CalendarDay[][];
 }
 
 export default function CalendarGridHeader({ weeks }: CalendarGridHeaderProps) {
+  // Add a state to force re-render
+  const [forceUpdate, setForceUpdate] = useState(Date.now());
+  
+  // Force a re-render on component mount
+  useEffect(() => {
+    setForceUpdate(Date.now());
+  }, []);
+  
   // Check if today is in the current view
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  
+  // For debugging - log today's date
+  console.log("Today's date:", today.toISOString().split('T')[0]);
+
+  // Function to check if a day is today
+  const isTodayDate = (day: CalendarDay) => {
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth();
+    const todayDay = today.getDate();
+    
+    const dayDate = new Date(day.date);
+    return dayDate.getFullYear() === todayYear && 
+           dayDate.getMonth() === todayMonth && 
+           dayDate.getDate() === todayDay;
+  };
 
   // If weeks array is empty or first week is undefined, render placeholder
   if (!weeks.length || !weeks[0]) {
@@ -81,11 +106,15 @@ export default function CalendarGridHeader({ weeks }: CalendarGridHeaderProps) {
         
         <div className={`flex-1 grid grid-cols-${gridCols}`}>
           {weeks[0].map((day, index) => {
-            const isTodayDate = isToday(day.date);
             const isWeekendDay = isWeekend(day.date);
             
             // Check if this is the first day of a new week
             const isFirstDayOfNewWeek = index > 0 && weeks[0][index - 1].weekNumber !== day.weekNumber;
+            
+            // For debugging - log if we found today's date
+            if (isTodayDate(day)) {
+              console.log("Found today's date in calendar:", new Date(day.date).toISOString().split('T')[0]);
+            }
             
             return (
               <div 
@@ -94,21 +123,29 @@ export default function CalendarGridHeader({ weeks }: CalendarGridHeaderProps) {
                   h-10 flex items-center justify-center border-r border-b border-gray-200
                   ${!day.isCurrentMonth ? 'bg-white text-gray-400' : 'bg-white'}
                   ${!day.isWithinRange ? 'bg-white' : ''}
-                  ${isTodayDate ? 'bg-blue-50' : ''}
                   ${isFirstDayOfNewWeek ? 'border-l-2 border-l-gray-300' : ''}
+                  ${isTodayDate(day) ? 'today-cell' : ''}
                 `}
+                style={isTodayDate(day) ? { 
+                  position: 'relative',
+                  zIndex: 20,
+                  padding: 0,
+                  overflow: 'hidden'
+                } : {}}
               >
-                <span className={`text-sm font-medium ${
-                  !day.isWithinRange || !day.isCurrentMonth
-                    ? 'text-gray-400'
-                    : isTodayDate
-                    ? 'text-blue-600'
-                    : isWeekendDay
-                    ? 'text-red-600'
-                    : 'text-gray-700'
-                }`}>
-                  {day.dayNumber}
-                </span>
+                {isTodayDate(day) ? (
+                  <TodayDateIndicator dayNumber={day.dayNumber} />
+                ) : (
+                  <span className={`text-sm font-medium ${
+                    !day.isWithinRange || !day.isCurrentMonth
+                      ? 'text-gray-400'
+                      : isWeekendDay
+                      ? 'text-red-600'
+                      : 'text-gray-700'
+                  }`}>
+                    {day.dayNumber}
+                  </span>
+                )}
               </div>
             );
           })}

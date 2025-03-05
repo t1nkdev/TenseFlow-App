@@ -32,7 +32,10 @@ export default function SidebarDepartments() {
         {/* Quick Actions */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-900">Quick Actions</h3>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-blue-600" />
+              <h3 className="text-sm font-medium text-gray-900">Department Functions</h3>
+            </div>
             <button 
               onClick={() => setIsQuickActionModalOpen(true)}
               className="p-1 hover:bg-gray-50 rounded-lg"

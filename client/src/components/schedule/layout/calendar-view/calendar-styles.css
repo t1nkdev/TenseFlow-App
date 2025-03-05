@@ -1,0 +1,131 @@
+/* Custom styles for the calendar */
+
+/* Today date indicator styles */
+.today-indicator {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.today-indicator-bg {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, #FF0000, #FF0000 10px, #CC0000 10px, #CC0000 20px);
+  animation: slide 2s linear infinite;
+}
+
+.today-indicator-text {
+  position: relative;
+  z-index: 10;
+  animation: pulse 1.5s ease-in-out infinite;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 0 3px black;
+}
+
+.today-indicator-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  padding: 1px 0;
+}
+
+.today-indicator-label span {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: white;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes slide {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 50px;
+  }
+}
+
+.shift-cell {
+  width: 26px;
+  height: 26px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Shift background colors (light) */
+.shift-purple-bg {
+  background-color: rgba(139, 92, 246, 0.08);  /* #8B5CF615 */
+}
+
+.shift-pink-bg {
+  background-color: rgba(236, 72, 153, 0.08);  /* #EC489915 */
+}
+
+.shift-yellow-bg {
+  background-color: rgba(245, 158, 11, 0.08);  /* #F59E0B15 */
+}
+
+.shift-blue-bg {
+  background-color: rgba(59, 130, 246, 0.08);  /* #3B82F615 */
+}
+
+.shift-green-bg {
+  background-color: rgba(16, 185, 129, 0.08);  /* #10B98115 */
+}
+
+.shift-red-bg {
+  background-color: rgba(239, 68, 68, 0.08);  /* #EF444415 */
+}
+
+.shift-gray-bg {
+  background-color: rgba(107, 114, 128, 0.08);  /* #6B728015 */
+}
+
+/* Shift text colors */
+.shift-purple-text {
+  color: #8B5CF6;
+}
+
+.shift-pink-text {
+  color: #EC4899;
+}
+
+.shift-yellow-text {
+  color: #F59E0B;
+}
+
+.shift-blue-text {
+  color: #3B82F6;
+}
+
+.shift-green-text {
+  color: #10B981;
+}
+
+.shift-red-text {
+  color: #EF4444;
+}
+
+.shift-gray-text {
+  color: #6B7280;
+} 

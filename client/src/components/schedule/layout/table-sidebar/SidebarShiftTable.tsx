@@ -340,7 +340,7 @@ export const SidebarShiftTable = ({ onShiftPlanSelect, selectedPlanId }: Sidebar
 
         {/* Quick Actions Header */}
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-900">Quick Actions</h3>
+          <h3 className="text-sm font-medium text-gray-900">Related Actions</h3>
         </div>
 
         {/* Quick Actions Content */}

@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import { ShiftType } from '@/types/prismaTypes';
 
 interface ShiftCellProps {
   employeeId: string;
@@ -42,23 +41,20 @@ export default function ShiftCell({
       tabIndex={isEditable ? 0 : -1}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className={`
-        h-10 flex items-center justify-center border-r border-b border-gray-200
-        ${isEditable ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'}
-      `}
+      className={`w-full h-full flex items-center justify-center ${isEditable ? 'cursor-pointer hover:brightness-95' : 'cursor-default'}`}
+      style={{ 
+        backgroundColor: shiftCode ? `${shiftColor}15` : 'transparent'
+      }}
       data-date={date.toISOString()}
       data-employee-id={employeeId}
     >
-      {shiftCode && (
-        <div 
-          className="min-w-[2rem] h-8 px-1.5 rounded-md flex items-center justify-center"
-          style={{ backgroundColor: `${shiftColor}15` }}
-        >
-          <span className="text-sm font-semibold" style={{ color: shiftColor }}>
-            {shiftCode}
-          </span>
-        </div>
+      {shiftCode ? (
+        <span className="text-sm font-semibold" style={{ color: shiftColor }}>
+          {shiftCode}
+        </span>
+      ) : (
+        <span className="text-xs text-gray-300">-</span>
       )}
     </div>
   );
-} 
+}

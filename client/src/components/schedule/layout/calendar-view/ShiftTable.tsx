@@ -420,13 +420,17 @@ export default function ShiftTable({ selectedPlan }: ShiftTableProps) {
     );
     
     if (shift) {
-      console.log(`Found shift for ${employeeId} on ${dateString}: ${shift.shiftType.code}`);
+      // If a shift type filter is active, only show cells that match the filter
+      if (filters.shiftTypeId && shift.shiftType.id !== filters.shiftTypeId) {
+        return { code: '', color: '' }; // Hide non-matching cells
+      }
+      
       return { code: shift.shiftType.code, color: shift.shiftType.color };
     }
     
     // No value found
     return { code: '', color: '' };
-  }, [schedules]);
+  }, [schedules, filters.shiftTypeId]);
   
   // Update calendar when current date changes or when plan changes
   useEffect(() => {
